@@ -1,0 +1,1511 @@
+
+
+<!DOCTYPE html>
+<html lang="ms">
+<head>
+<meta charset="UTF-8">
+<title>Sistem Jadual Ganti - Dashboard</title>
+
+<!-- LIBRARY UNTUK EXPORT PNG/JPG/PDF -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+
+<style>
+  body {
+    font-family: Arial, sans-serif;
+    margin: 0;
+    background: #f3f4f6;
+    font-size: 15px; /* FONT BESAR UNTUK PAPAN KENYATAAN */
+  }
+
+  /* Layout ringkas – tiada sidebar */
+  .layout {
+    min-height: 100vh;
+  }
+
+  .main {
+    padding: 16px 18px;
+  }
+
+  .top-bar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 14px;
+  }
+
+  .top-title {
+    font-size: 20px;
+    font-weight: bold;
+  }
+
+  .top-subtitle {
+    font-size: 13px;
+    color: #6b7280;
+  }
+
+  .top-right {
+    font-size: 13px;
+    color: #6b7280;
+    text-align: right;
+  }
+
+  .card {
+    background: #ffffff;
+    padding: 12px 16px;
+    margin-bottom: 12px;
+    border-radius: 8px;
+    box-shadow: 0 1px 3px rgba(15, 23, 42, 0.08);
+  }
+
+  h1, h2, h3 {
+    margin-top: 0;
+  }
+
+  label {
+    font-weight: bold;
+  }
+
+  textarea {
+    width: 100%;
+    min-height: 160px;
+    font-family: Consolas, monospace;
+    font-size: 13px;
+  }
+
+  input[type="text"], select {
+    padding: 4px 6px;
+    font-size: 14px;
+  }
+
+  button {
+    padding: 6px 10px;
+    margin-top: 6px;
+    margin-right: 6px;
+    cursor: pointer;
+    border-radius: 4px;
+    border: 1px solid #888;
+    background: #e5e7eb;
+    font-size: 14px;
+  }
+
+  button.primary {
+    background: #2563eb;
+    color: white;
+    border-color: #1d4ed8;
+  }
+
+  button.print {
+    background: #16a34a;
+    color: white;
+    border-color: #15803d;
+  }
+
+  button.export {
+    background: #0f766e;
+    color: #fff;
+    border-color: #0f766e;
+  }
+
+  small {
+    color: #6b7280;
+    font-size: 13px;
+  }
+
+  .section-vertical > .section-block {
+    margin-bottom: 10px;
+  }
+
+  /* Senarai guru / kelas – 3 kolum dalam satu kotak */
+  #absentTeacherList,
+  #teacherCheckboxes,
+  #classList {
+    max-height: 260px;
+    overflow-y: auto;
+    border: 1px solid #e5e7eb;
+    padding: 6px;
+    margin-top: 4px;
+    font-size: 14px;
+
+    column-count: 3;
+    column-gap: 12px;
+    background: #f9fafb;
+  }
+
+  #absentTeacherList label,
+  #teacherCheckboxes label,
+  #classList label {
+    display: block;
+    break-inside: avoid;
+    margin-bottom: 2px;
+    font-weight: normal;
+    white-space: nowrap;
+  }
+
+  #absentSettings,
+  #classSettings {
+    margin-top: 8px;
+    font-size: 14px;
+  }
+
+  .absent-card {
+    border: 1px solid #e5e7eb;
+    border-radius: 6px;
+    padding: 6px 8px;
+    margin-bottom: 6px;
+    background: #fffbeb;
+  }
+
+  .absent-card-title {
+    font-weight: bold;
+    margin-bottom: 4px;
+  }
+
+  .absent-times {
+    column-count: 2;
+    column-gap: 8px;
+  }
+
+  .absent-times label {
+    break-inside: avoid;
+  }
+
+  table {
+    border-collapse: collapse;
+    width: 100%;
+    margin-top: 8px;
+    font-size: 15px; /* BESARKAN FONT DALAM JADUAL */
+    background: #fff;
+  }
+
+  th, td {
+    border: 1px solid #e5e7eb;
+    padding: 4px 6px;
+    text-align: left;
+    vertical-align: top;
+  }
+
+  th {
+    background: #e5e7eb;
+  }
+
+  .chip-kelas {
+    display: inline-block;
+    padding: 3px 8px;
+    border-radius: 10px;
+    font-size: 15px;
+    font-weight: bold;
+    color: #000;              /* TULISAN HITAM SUPAYA JELAS WALAU TANPA WARNA */
+    background: #fde68a;      /* Latar kuning lembut (jika printer support color) */
+    border: 1px solid #000;   /* BORDER HITAM – MASIH NAMPAK DALAM B/W */
+  }
+
+  .no-relief {
+    color: #b91c1c;
+    font-weight: bold;
+  }
+
+  .relief-editable {
+    min-height: 18px;
+    outline: none;
+    cursor: text;
+  }
+
+  .relief-editable:hover {
+    background: #f3f4ff;
+  }
+
+  /* Dashboard summary */
+  #dashboardSection { }
+
+  .summary-grid {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 10px;
+    margin-top: 6px;
+  }
+
+  .summary-card {
+    background: #eff6ff;
+    border-radius: 8px;
+    padding: 8px 10px;
+    border: 1px solid #dbeafe;
+  }
+
+  .summary-card h3 {
+    margin: 0;
+    font-size: 13px;
+    color: #374151;
+  }
+
+  .summary-value {
+    margin-top: 4px;
+    font-size: 24px;
+    font-weight: bold;
+    color: #1d4ed8;
+  }
+
+  .summary-sub {
+    font-size: 12px;
+    color: #6b7280;
+  }
+
+  .summary-card.alert {
+    background: #fef2f2;
+    border-color: #fecaca;
+  }
+
+  .summary-card.alert .summary-value {
+    color: #b91c1c;
+  }
+
+  .relief-teacher-list {
+    margin-top: 8px;
+    font-size: 14px;
+  }
+
+  .relief-teacher-list table {
+    margin-top: 4px;
+  }
+
+  @media (max-width: 900px) {
+    .main {
+      padding: 10px;
+    }
+  }
+
+  @media print {
+    body {
+      background: #fff;
+    }
+    .no-print {
+      display: none !important;
+    }
+    .main {
+      padding: 0 8px;
+    }
+    .card {
+      box-shadow: none;
+      border-radius: 0;
+      margin-bottom: 6px;
+    }
+  }
+
+  /* Untuk eksport PDF landscape – SEKARANG BESAR (16px) */
+  .pdf-small * {
+    font-size: 16px !important;
+  }
+</style>
+</head>
+<body>
+<div class="layout">
+  <main class="main">
+    <!-- TOP BAR -->
+    <div class="top-bar no-print">
+      <div>
+        <div class="top-title">Sistem Jadual Ganti</div>
+        <div class="top-subtitle">Paparan dashboard gaya sistem sekolah</div>
+      </div>
+      <div class="top-right">
+        <div><b>Sekolah:</b> SMK TENGKU MENTERI</div>
+        <div id="todayInfo"></div>
+      </div>
+    </div>
+
+    <!-- DASHBOARD -->
+    <div class="card" id="dashboardSection">
+      <h2>Dashboard – Ringkasan Hari Ini</h2>
+      <small>
+        Statistik akan dikemas kini setiap kali cikgu tekan <b>"Jana Jadual Ganti"</b>.
+      </small>
+
+      <div class="summary-grid">
+        <div class="summary-card">
+          <h3>Jumlah Slot Ganti</h3>
+          <div class="summary-value" id="statTotalSlot">0</div>
+          <div class="summary-sub" id="subTotalSlot">Belum dijana</div>
+        </div>
+
+        <div class="summary-card">
+          <h3>Guru Tidak Hadir</h3>
+          <div class="summary-value" id="statAbsentTeacher">0</div>
+          <div class="summary-sub" id="subAbsentTeacher">–</div>
+        </div>
+
+        <div class="summary-card">
+          <h3>Guru Ganti Digunakan</h3>
+          <div class="summary-value" id="statReliefTeacher">0</div>
+          <div class="summary-sub" id="subReliefTeacher">–</div>
+        </div>
+
+        <div class="summary-card alert">
+          <h3>Slot Tiada Guru Ganti</h3>
+          <div class="summary-value" id="statNoRelief">0</div>
+          <div class="summary-sub" id="subNoRelief">Tiada masalah</div>
+        </div>
+      </div>
+
+      <div class="relief-teacher-list" id="reliefTeacherSummary">
+        <h3>Senarai Ringkas Beban Relief Guru</h3>
+        <small>Ditunjukkan selepas jadual ganti dijana.</small>
+      </div>
+
+      <!-- BUTANG EXPORT UNTUK RINGKASAN RELIEF -->
+      <div class="no-print" style="margin-top:8px;">
+        <button class="export" onclick="exportSummaryPNG()">Eksport PNG (Ringkasan Relief)</button>
+        <button class="export" onclick="exportSummaryPDF()">Eksport PDF (PT) (Ringkasan Relief)</button>
+      </div>
+    </div>
+
+    <!-- TETAPAN & INPUT -->
+    <div id="setupSection">
+      <div class="card no-print">
+        <label>Maklumat asas</label><br>
+        <label>Tarikh: </label>
+        <input type="text" id="tarikh" placeholder="cth: 21-11-2025">
+        &nbsp;&nbsp;
+        <label>Hari: </label>
+        <select id="hari">
+          <option value="">-- pilih --</option>
+          <option value="ISNIN">ISNIN</option>
+          <option value="SELASA">SELASA</option>
+          <option value="RABU">RABU</option>
+          <option value="KHAMIS">KHAMIS</option>
+          <option value="JUMAAT">JUMAAT</option>
+        </select>
+        &nbsp;&nbsp;
+        <label>Minggu: </label>
+        <input type="text" id="minggu" style="width:60px;" placeholder="cth: 1">
+      </div>
+
+      <div class="card no-print">
+        <label>Jadual kelas</label><br>
+        <small>
+          Pilihan A: import terus dari <b>Jadual Asas</b> (App jadual waktu).<br>
+          Pilihan B: tampal data CSV seperti sebelum ini.<br>
+          Pilihan C: guna butang <b>Muat Naik Jadual (FD)</b> untuk pilih fail CSV dari folder.
+        </small>
+        <textarea id="csvInput" placeholder="(Pilihan B) Tampal CSV di sini jika tidak guna Jadual Asas"></textarea><br>
+        <button class="primary" onclick="loadTimetable()">Muat Naik Jadual (CSV)</button>
+        <button onclick="loadTimetableFromFile()">Muat Naik Jadual (FD)</button>
+        <button onclick="loadFromBaseTimetable()">Import daripada Jadual Asas</button>
+        <input type="file" id="csvFileInput" accept=".csv" style="display:none">
+        <br>
+        <small id="baseInfo"></small>
+      </div>
+
+      <div class="card no-print section-vertical">
+        <!-- 1. GURU TIDAK HADIR -->
+        <div class="section-block">
+          <label>Guru tidak hadir (tick guru yang tidak hadir)</label><br>
+          <small>Senarai guru di bawah dijana daripada jadual.</small>
+          <div id="absentTeacherList">
+            <small>Belum ada jadual. Import Jadual Asas atau tampal CSV dan tekan "Muat Naik Jadual".</small>
+          </div>
+          <button onclick="buildAbsentSettings()">Kemas kini tetapan masa guru tidak hadir</button>
+          <div id="absentSettings">
+            <small>Tiada guru tidak hadir dipilih.</small>
+          </div>
+        </div>
+
+        <!-- 2. GURU DIKECUALIKAN -->
+        <div class="section-block">
+          <label>Guru dikecualikan daripada relief (tick guru yang TIDAK mahu digunakan)</label>
+          <div id="teacherCheckboxes">
+            <small>Belum ada jadual. Import Jadual Asas atau tampal CSV dan tekan "Muat Naik Jadual".</small>
+          </div>
+        </div>
+
+        <!-- 3. KELAS DIKECUALIKAN -->
+        <div class="section-block">
+          <label>Kelas dikecualikan daripada relief (tick kelas)</label>
+          <div id="classList">
+            <small>Belum ada jadual. Import Jadual Asas atau tampal CSV dan tekan "Muat Naik Jadual".</small>
+          </div>
+          <button onclick="buildClassSettings()">Kemas kini tetapan masa kelas dikecualikan</button>
+          <div id="classSettings">
+            <small>Tiada kelas dikecualikan dipilih.</small>
+          </div>
+        </div>
+      </div>
+
+      <div class="card no-print">
+        <button class="primary" onclick="generateRelief()">Jana Jadual Ganti</button>
+        <button class="print" onclick="window.print()">Cetak Jadual</button>
+        <!-- BUTANG EXPORT -->
+        <button class="export" onclick="exportPNG()">Eksport PNG</button>
+        <button class="export" onclick="exportJPG()">Eksport JPG</button>
+        <button class="export" onclick="exportPDF()">Eksport PDF (PT)</button>
+        <button class="export" onclick="exportPDF_LS()">Eksport PDF (LS)</button>
+        <br>
+        <small><i>Tip: Double-click nama guru ganti dalam jadual untuk ubah secara manual (boleh kosongkan dan isi semula).</i></small>
+      </div>
+    </div>
+
+    <!-- OUTPUT -->
+    <div class="card" id="outputCard" style="display:none;">
+      <div id="outputHeader"></div>
+      <div id="outputTable"></div>
+    </div>
+  </main>
+</div>
+
+<script>
+  const { jsPDF } = window.jspdf || {};
+
+  // Papar tarikh hari ini di top bar
+  (function setToday(){
+    const el = document.getElementById('todayInfo');
+    const d = new Date();
+    const pad = n => (n<10?'0':'')+n;
+    el.textContent = `Hari ini: ${pad(d.getDate())}-${pad(d.getMonth()+1)}-${d.getFullYear()}`;
+  })();
+
+  // ================== DATA GURU (KOD -> NAMA PENUH) ==================
+  const teacherNames = {
+    "SUZ":"SUZIYANA BT HASHIM",
+    "SAI":"NORSAILAWATI BT MOHD SAAD",
+    "ITA":"PN.HANITA BINTI HASAN",
+    "AYA":"PN.NORHAYA BT CHE HAT",
+    "ROH":"PN.ROHANI BINTI MOHAMAD",
+    "COO":"PN.CHOO CHENG HOOI",
+    "QIH":"MOHAMAD FAQIH BIN JUNUS",
+    "MIZ":"NUR MIZANI BT HASHIM",
+    "NOR":"PN.NOREHAWATI BINTI SHAMSUDIN",
+    "FUL":"ZAIFUL BIN ABDULLAH",
+    "TIN":"FATIN SYAHIRAH BT MAT SALLEH",
+    "ROS":"MOHD ROSMAN BIN MOHD YUSOF",
+    "ITI":"SITI FATIMAH BINTI ZAKARIA",
+    "GRX":"GURU X",
+    "SGS":"[E] SEMUA GURU SEMENTERI",
+    "ALA":"SALAWATI BT SALEHUDIN",
+    "AFI":"NURUL AFIQAH ZULKEFLI",
+    "ZIA":"ROSZIANA BT ABD RAHIM",
+    "SAF":"SHAFFRIZAL B MOHD ISA",
+    "DIN":"SHARIFUDDIN BIN KHAIRUDDIN",
+    "ATI":"SURIATI BT SAMION",
+    "TUN":"TUN ABDUL RAHMAN B ZAMIL",
+    "YUR":"YUSRIZAL @ YUSOF BIN YOP",
+    "ZAB":"ZABIDAH BT ARIF",
+    "LAH":"NOOR FADZILAH BT ABDUL RAOF",
+    "ZUL":"ZULKAINAIN BIN AHMAD",
+    "AZI":"NOR AZIMAN BIN ABDUL AZIZ",
+    "CHE":"CHE MAZNAH BT MOHD TAIB",
+    "FAR":"FARIS ZUHAIRI BIN MOHAMED",
+    "FIR":"FIRZAN ALI BIN HAMDI ALI",
+    "AZU":"NOR AZURA BINTI SALEH",
+    "KHO":"SITI ZALEKHO BINTI IBRAHIM",
+    "ZIE":"FAZIELA BT ABU BAKAR @ CHE DIN",
+    "FIZ":"MOHD. HAFIZ BIN MOHD. JAIZ",
+    "NAB":"NURUL AQILAH NABIHAH",
+    "SOF":"SOFIAH BINTI MOHD SANI",
+    "VIY":"ZAVIYAH BI MOHD SAAD",
+    "JAN":"HAJJAH JANNATHUL FAJARIAH BT ALLAUDIN",
+    "MAR":"MARHAINI BT LOP MOKTAR",
+    "FAZ":"MOHD FAZLI BIN ABU HASSAN",
+    "NAI":"NAILAH BT OTHMAN",
+    "NAZ":"NAZIMAH BT AHMAD",
+    "FAH":"NOR AFFIFAH BT HARUN",
+    "AIS":"NOR AISHAH BT ABDUL RAHMAN",
+    "AWA":"NOR AZWA BT KAMARUDDIN",
+    "FAD":"NOR FADHILAH BT MOHAMAD",
+    "HES":"NOR HESHAM BIN MOHAMAD",
+    "ZUN":"NOR ZUNAIDAH BT SALIM",
+    "AIN":"NORAIN BT AHMAD",
+    "GAT":"MEGAT SAFUAN BIN MEGAT YAHYA",
+    "LIZ":"NORLIZA BT ZAKARIA",
+    "VIV":"VIVIENNE SAW YEN YOONG",
+    "FAL":"NURUL FALAH HANIM BINTI A RAHMAN HAMIM",
+    "EZA":"SUHEZA BINTI ABDULLAH",
+    "WAN":"NUR IFFAH RAHWANI BINTI AHMAD HISHAM",
+    "SAL":"NORSALWA BT ABDUL WAHAB",
+    "ABU":"MUHAMMAD ABU HANDHALAH BIN KAMIL",
+    "HAI":"HAIRUL HISHAM BIN ISMAIL",
+    "ZAH":"FARIZAH BT SULAIMAN",
+    "PAH":"5.DR.PAHWAZULL KHAIR BIN SHAFIE",
+    "KIL":"NORSAKILAH BINTI ABDULLAH",
+    "ZIL":"NURZILLA BINTI MOHD ZAMRI",
+    "RAN":"SYED NASRAN HISHAM BIN SYED DIN",
+    "FID":"MOHD HAFIDZ BIN ABDULL HALIM",
+    "RIE":"MOHD HUSZAIRIE BIN GHAZALI",
+    "IHA":"NORZIHA BT ZAKARIA",
+    "AIL":"ISMAIL BIN HASHIM",
+    "JWA":"NAJWA AIMAN BINTI SARIFF",
+    "RUN":"MOHAMAD FAIRUN BIN RAMLY"
+  };
+
+  // DEFAULT GURU DIKECUALIKAN RELIEF
+  const defaultExcludedSet = new Set([
+    "ROH","SUZ","FAH","FAR","ITA","NOR","SGS","PAH","AYA","COO"
+  ]);
+
+  let timetable = [];
+  let allTeachers = new Set();
+  let allClasses = new Set();
+
+  // SIMPAN KEPUTUSAN RELIEF UNTUK RUN BERULANG
+  let existingReliefRows = [];     // semua baris relief yang pernah dijana
+  let reliefHistoryCount = {};     // bilangan relief (auto) per guru
+
+  // Fungsi jana key unik bagi setiap slot relief
+  function makeSlotKey(hari, waktu, kelas, absentCode) {
+    return `${hari}|${waktu}|${kelas}|${absentCode}`;
+  }
+
+  // SEBELUM jana kali kedua, baca semula edit manual dalam jadual
+  function syncManualReliefEdits() {
+    if (!existingReliefRows.length) return;
+    const map = {};
+    existingReliefRows.forEach(r => { map[r.key] = r; });
+
+    const edits = document.querySelectorAll('.relief-editable[data-key]');
+    edits.forEach(el => {
+      const key = el.getAttribute('data-key');
+      const row = map[key];
+      if (!row) return;
+      const txt = (el.textContent || "").trim();
+      row.reliefDisplay = txt;
+      // Jika cikgu kosongkan cell, anggap tiada guru ganti
+      if (!txt) {
+        row.reliefCode = null;
+        row.reliefName = "";
+      }
+    });
+
+    // Kira semula sejarah relief berdasarkan reliefCode
+    reliefHistoryCount = {};
+    existingReliefRows.forEach(r => {
+      if (r.reliefCode) {
+        reliefHistoryCount[r.reliefCode] = (reliefHistoryCount[r.reliefCode] || 0) + 1;
+      }
+    });
+  }
+
+  // BACA STATUS JADUAL ASAS
+  (function checkBaseTimetable(){
+    const baseInfo = document.getElementById('baseInfo');
+    try {
+      const s = localStorage.getItem('guruGantiBaseTimetable');
+      if (!s) {
+        baseInfo.textContent = " (Tiada data Jadual Asas ditemui dalam localStorage.)";
+      } else {
+        const data = JSON.parse(s);
+        if (data && Array.isArray(data.entries) && data.entries.length) {
+          baseInfo.textContent = ` (Jadual Asas ditemui: ${data.entries.length} slot tersedia.)`;
+        } else {
+          baseInfo.textContent = " (Data Jadual Asas ditemui tetapi tiada entries.)";
+        }
+      }
+    } catch(e) {
+      baseInfo.textContent = " (Ralat membaca Jadual Asas.)";
+    }
+  })();
+
+  // IMPORT DARI JADUAL ASAS
+  function loadFromBaseTimetable() {
+    timetable = [];
+    allTeachers = new Set();
+    allClasses = new Set();
+    existingReliefRows = [];
+    reliefHistoryCount = {};
+
+    let dataStr = null;
+    try {
+      dataStr = localStorage.getItem('guruGantiBaseTimetable');
+    } catch(e) {
+      alert("Tidak dapat membaca localStorage. Semak permission browser.");
+      return;
+    }
+
+    if (!dataStr) {
+      alert("Tiada data Jadual Asas ditemui dalam localStorage. Pastikan app jadual asas telah jana jadual & simpan.");
+      return;
+    }
+
+    let data;
+    try {
+      data = JSON.parse(dataStr);
+    } catch(e) {
+      alert("Data Jadual Asas rosak atau bukan JSON yang sah.");
+      return;
+    }
+
+    if (!data || !Array.isArray(data.entries)) {
+      alert("Struktur data Jadual Asas tidak lengkap (tiada entries).");
+      return;
+    }
+
+    data.entries.forEach(entry => {
+      const kelas = (entry.className || entry.classId || "").toString().trim();
+      const hari = (entry.day || "").toString().toUpperCase().trim();
+      const waktu = (entry.timeSlot || "").toString().trim();
+      const subjectCode = (entry.subjectCode || "").toString().trim();
+      const subjectName = (entry.subjectName || "").toString().trim();
+      const guru = (entry.teacherCode || "").toString().toUpperCase().trim();
+
+      if (!kelas || !hari || !waktu || !guru) return;
+
+      const subjek = subjectCode || subjectName || "SUBJEK";
+
+      timetable.push({ kelas, hari, waktu, subjek, guru });
+      allTeachers.add(guru);
+      allClasses.add(kelas);
+    });
+
+    if (!timetable.length) {
+      alert("Data Jadual Asas wujud tetapi tiada slot lengkap (kelas/hari/waktu/guru).");
+      return;
+    }
+
+    renderTeacherLists();
+    renderClassList();
+    document.getElementById('absentSettings').innerHTML =
+      '<small>Tiada guru tidak hadir dipilih.</small>';
+    document.getElementById('classSettings').innerHTML =
+      '<small>Tiada kelas dikecualikan dipilih.</small>';
+
+    alert("Jadual Asas berjaya diimport ke sistem Jadual Ganti.");
+  }
+
+  // PROSES CSV YANG DIBERI (textarea atau file)
+  function processCSVText(csv) {
+    timetable = [];
+    allTeachers = new Set();
+    allClasses = new Set();
+    existingReliefRows = [];
+    reliefHistoryCount = {};
+
+    const lines = csv.split(/\r?\n/);
+    for (let raw of lines) {
+      if (!raw.trim()) continue;
+      const parts = raw.split(',');
+      if (parts.length < 4) continue;
+
+      let kelas = parts[0].trim();
+      let hari = parts[1].trim().toUpperCase();
+      let waktu = parts[2].trim();
+      let sg = parts[3].trim();
+
+      if (hari === "HARI" || kelas === "Kelas") continue;
+
+      sg = sg.replace(/\s*-\s*/g, '-');
+      let lastDash = sg.lastIndexOf('-');
+      if (lastDash === -1) continue;
+
+      let subjek = sg.slice(0, lastDash).trim();
+      let guru = sg.slice(lastDash + 1).trim().toUpperCase();
+
+      timetable.push({ kelas, hari, waktu, subjek, guru });
+      allTeachers.add(guru);
+      allClasses.add(kelas);
+    }
+
+    renderTeacherLists();
+    renderClassList();
+    document.getElementById('absentSettings').innerHTML =
+      '<small>Tiada guru tidak hadir dipilih.</small>';
+    document.getElementById('classSettings').innerHTML =
+      '<small>Tiada kelas dikecualikan dipilih.</small>';
+  }
+
+  // LOAD TIMETABLE DARI TEXTAREA CSV
+  function loadTimetable() {
+    const csv = document.getElementById('csvInput').value;
+    if (!csv.trim()) {
+      alert("Sila tampal jadual CSV dahulu, atau guna butang 'Muat Naik Jadual (FD)'.");
+      return;
+    }
+    processCSVText(csv);
+    alert("Jadual (CSV) berjaya dimuat naik daripada teks. Guru & kelas telah dijana.");
+  }
+
+  // LOAD TIMETABLE DARI FAIL CSV (FD)
+  function loadTimetableFromFile() {
+    const fileInput = document.getElementById('csvFileInput');
+    fileInput.value = "";
+    fileInput.onchange = () => {
+      const file = fileInput.files[0];
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        const text = e.target.result || "";
+        if (!text.trim()) {
+          alert("Fail CSV kosong atau tidak dapat dibaca.");
+          return;
+        }
+        processCSVText(text);
+        alert("Jadual (CSV) berjaya dimuat naik daripada fail. Guru & kelas telah dijana.");
+      };
+      reader.onerror = () => {
+        alert("Ralat membaca fail CSV.");
+      };
+      reader.readAsText(file, "UTF-8");
+    };
+    fileInput.click();
+  }
+
+  function renderTeacherLists() {
+    const sortedTeachers = Array.from(allTeachers).sort();
+    const absentDiv = document.getElementById('absentTeacherList');
+    const exclDiv = document.getElementById('teacherCheckboxes');
+
+    if (sortedTeachers.length === 0) {
+      absentDiv.innerHTML = '<small>Tiada guru dijumpai dalam jadual.</small>';
+      exclDiv.innerHTML = '<small>Tiada guru dijumpai dalam jadual.</small>';
+      return;
+    }
+
+    absentDiv.innerHTML = "";
+    exclDiv.innerHTML = "";
+
+    sortedTeachers.forEach(code => {
+      const name = teacherNames[code] || "";
+      const labelText = name ? `${code} - ${name}` : code;
+
+      // Guru tidak hadir
+      const lbl1 = document.createElement('label');
+      const cb1 = document.createElement('input');
+      cb1.type = 'checkbox';
+      cb1.value = code;
+      cb1.className = 'absent-teacher';
+      lbl1.appendChild(cb1);
+      lbl1.appendChild(document.createTextNode(' ' + labelText));
+      absentDiv.appendChild(lbl1);
+
+      // Guru dikecualikan (DEFAULT TICK untuk set tertentu)
+      const lbl2 = document.createElement('label');
+      const cb2 = document.createElement('input');
+      cb2.type = 'checkbox';
+      cb2.value = code;
+      cb2.className = 'exclude-teacher';
+      if (defaultExcludedSet.has(code)) {
+        cb2.checked = true;
+      }
+      lbl2.appendChild(cb2);
+      lbl2.appendChild(document.createTextNode(' ' + labelText));
+      exclDiv.appendChild(lbl2);
+    });
+  }
+
+  function renderClassList() {
+    const listDiv = document.getElementById('classList');
+    const sortedClasses = Array.from(allClasses).sort();
+
+    if (sortedClasses.length === 0) {
+      listDiv.innerHTML = '<small>Tiada kelas dijumpai dalam jadual.</small>';
+      return;
+    }
+
+    listDiv.innerHTML = "";
+    sortedClasses.forEach(kelas => {
+      const lbl = document.createElement('label');
+      const cb = document.createElement('input');
+      cb.type = 'checkbox';
+      cb.value = kelas;
+      cb.className = 'exclude-class';
+      lbl.appendChild(cb);
+      lbl.appendChild(document.createTextNode(' ' + kelas));
+      listDiv.appendChild(lbl);
+    });
+  }
+
+  function buildAbsentSettings() {
+    const hari = document.getElementById('hari').value;
+    if (!hari) {
+      alert("Sila pilih HARI terlebih dahulu.");
+      return;
+    }
+
+    const selectedAbsent = Array.from(
+      document.querySelectorAll('.absent-teacher:checked')
+    ).map(cb => cb.value);
+
+    const settingsDiv = document.getElementById('absentSettings');
+    if (selectedAbsent.length === 0) {
+      settingsDiv.innerHTML = '<small>Tiada guru tidak hadir dipilih.</small>';
+      return;
+    }
+
+    let html = "";
+    selectedAbsent.forEach(code => {
+      const name = teacherNames[code] || "";
+      const labelText = name ? `${code} - ${name}` : code;
+
+      const times = Array.from(
+        new Set(
+          timetable
+            .filter(r => r.hari === hari && r.guru === code)
+            .map(r => r.waktu)
+        )
+      ).sort();
+
+      html += `<div class="absent-card">
+                 <div class="absent-card-title">${labelText}</div>`;
+
+      if (times.length === 0) {
+        html += `<small>Tiada waktu mengajar direkodkan untuk hari ini.</small>`;
+      } else {
+        html += `<small>Tick waktu yang PERLU disediakan guru ganti (default: semua ditandakan).</small>
+                 <div class="absent-times">`;
+        times.forEach(t => {
+          const safeId = `abs_${code}_${t.replace(/[^a-zA-Z0-9]/g,'_')}`;
+          html += `<label><input type="checkbox" id="${safeId}" 
+                                 data-teacher="${code}" 
+                                 class="absent-time" 
+                                 value="${t}" checked> ${t}</label>`;
+        });
+        html += `</div>`;
+      }
+
+      html += `</div>`;
+    });
+
+    settingsDiv.innerHTML = html;
+  }
+
+  // Tetapan masa untuk kelas dikecualikan (macam guru tidak hadir)
+  function buildClassSettings() {
+    const hari = document.getElementById('hari').value;
+    if (!hari) {
+      alert("Sila pilih HARI terlebih dahulu.");
+      return;
+    }
+
+    const selectedClasses = Array.from(
+      document.querySelectorAll('.exclude-class:checked')
+    ).map(cb => cb.value);
+
+    const settingsDiv = document.getElementById('classSettings');
+    if (selectedClasses.length === 0) {
+      settingsDiv.innerHTML = '<small>Tiada kelas dikecualikan dipilih.</small>';
+      return;
+    }
+
+    let html = "";
+    selectedClasses.forEach(kelas => {
+      const times = Array.from(
+        new Set(
+          timetable
+            .filter(r => r.hari === hari && r.kelas === kelas)
+            .map(r => r.waktu)
+        )
+      ).sort();
+
+      html += `<div class="absent-card">
+                 <div class="absent-card-title">Kelas ${kelas}</div>`;
+
+      if (times.length === 0) {
+        html += `<small>Tiada waktu direkodkan untuk kelas ini pada hari ini.</small>`;
+      } else {
+        html += `<small>Tick waktu yang <b>DIKECUALIKAN</b> daripada relief (default: semua ditandakan).</small>
+                 <div class="absent-times">`;
+        times.forEach(t => {
+          const safeId = `cls_${kelas}_${t.replace(/[^a-zA-Z0-9]/g,'_')}`;
+          html += `<label><input type="checkbox" id="${safeId}" 
+                                 class="class-time" 
+                                 data-class="${kelas}" 
+                                 value="${t}" checked> ${t}</label>`;
+        });
+        html += `</div>`;
+      }
+
+      html += `</div>`;
+    });
+
+    settingsDiv.innerHTML = html;
+  }
+
+  // Warna subjek / kelas
+  const subjectColors = {
+    "BM":"#ffcc80",
+    "BI":"#90caf9",
+    "SN":"#a5d6a7",
+    "MAT":"#fff59d",
+    "GEO":"#ce93d8",
+    "SEJ":"#ffab91",
+    "RBT":"#b0bec5",
+    "PJ":"#ffecb3",
+    "PIB":"#f48fb1",
+    "PSV":"#b39ddb",
+    "PSB":"#80deea",
+    "MZB":"#e6ee9c",
+    "BA":"#ffe082",
+    "KKQ":"#c5e1a5",
+    "TS":"#bcaaa4",
+    "PIA":"#ffe0b2",
+    "PNG":"#d1c4e9",
+    "EA":"#b2dfdb",
+    "SRT":"#f8bbd0",
+    "PRT":"#d7ccc8",
+    "KIM":"#ffccbc",
+    "FIZ":"#c8e6c9",
+    "MT":"#fff59d",
+    "GKT":"#ffe082",
+    "PA":"#d7ccc8"
+  };
+
+  function getSubjectColor(subjek) {
+    const code = subjek.split('-')[0].toUpperCase();
+    return subjectColors[code] || "#e0e0e0";
+  }
+
+  function getClassColor(kelas) {
+    const ch = kelas.charCodeAt(0);
+    const hue = (ch * 37) % 360;
+    return `hsl(${hue}, 55%, 45%)`;
+  }
+
+  // =============== ALGORITMA RELIEF (MAX 2 RELIEF / GURU + HIGHLIGHT + PRIORITI + MASA KELAS) ===============
+  function generateRelief() {
+    if (timetable.length === 0) {
+      alert("Sila import Jadual Asas atau muat naik jadual CSV dahulu.");
+      return;
+    }
+
+    const hari = document.getElementById('hari').value;
+    if (!hari) {
+      alert("Sila pilih HARI.");
+      return;
+    }
+
+    const tarikh = document.getElementById('tarikh').value || "-";
+    const minggu = document.getElementById('minggu').value || "-";
+
+    // Simpan dulu apa-apa edit manual sebelum kira semula
+    syncManualReliefEdits();
+
+    const absentTeachers = Array.from(
+      document.querySelectorAll('.absent-teacher:checked')
+    ).map(cb => cb.value);
+
+    if (absentTeachers.length === 0) {
+      alert("Sila pilih sekurang-kurangnya seorang guru tidak hadir.");
+      return;
+    }
+
+    const excludedTeachers = new Set(
+      Array.from(document.querySelectorAll('.exclude-teacher:checked'))
+        .map(cb => cb.value)
+    );
+
+    const excludedClasses = new Set(
+      Array.from(document.querySelectorAll('.exclude-class:checked'))
+        .map(cb => cb.value)
+    );
+
+    const allowedTimesByAbsent = {};
+    absentTeachers.forEach(code => {
+      const timeCbs = Array.from(
+        document.querySelectorAll(`.absent-time[data-teacher="${code}"]`)
+      );
+      if (timeCbs.length === 0) {
+        allowedTimesByAbsent[code] = null;
+      } else {
+        const times = timeCbs.filter(cb => cb.checked).map(cb => cb.value);
+        allowedTimesByAbsent[code] = times.length ? new Set(times) : new Set();
+      }
+    });
+
+    // Tetapan masa untuk kelas dikecualikan
+    const excludedTimesByClass = {};
+    const selectedExcludedClasses = Array.from(
+      document.querySelectorAll('.exclude-class:checked')
+    ).map(cb => cb.value);
+
+    selectedExcludedClasses.forEach(kelas => {
+      const timeCbs = Array.from(
+        document.querySelectorAll(`.class-time[data-class="${kelas}"]`)
+      );
+      if (timeCbs.length === 0) {
+        // Tiada tetapan masa spesifik → semua waktu kelas ini dikecualikan
+        excludedTimesByClass[kelas] = null;
+      } else {
+        const times = timeCbs.filter(cb => cb.checked).map(cb => cb.value);
+        // Set kosong = tiada waktu dikecualikan walaupun kelas ditanda
+        excludedTimesByClass[kelas] = times.length ? new Set(times) : new Set();
+      }
+    });
+
+    function isClassExcludedAt(kelas, waktu) {
+      if (!excludedClasses.has(kelas)) return false;
+      const cfg = excludedTimesByClass[kelas];
+      if (cfg === undefined || cfg === null) return true; // semua waktu dikecualikan
+      if (cfg instanceof Set) return cfg.has(waktu);
+      return false;
+    }
+
+    // kira beban asal (waktu mengajar) setiap guru untuk hari itu
+    const baseDayLoad = {};
+    timetable
+      .filter(r => r.hari === hari)
+      .forEach(r => {
+        baseDayLoad[r.guru] = (baseDayLoad[r.guru] || 0) + 1;
+      });
+
+    // sediakan map slot->row sedia ada (run terdahulu)
+    const existingMap = {};
+    existingReliefRows.forEach(r => { existingMap[r.key] = r; });
+
+    const teacherList = Array.from(allTeachers).sort();
+    const newReliefRows = [];
+
+    // setiap slot guru tidak hadir
+    timetable
+      .filter(r => r.hari === hari && absentTeachers.includes(r.guru))
+      .forEach(record => {
+        const absent = record.guru;
+        const kelas = record.kelas;
+        const waktu = record.waktu;
+        const subjek = record.subjek;
+
+        // Jika kelas ini dikecualikan dari relief pada waktu ini, abaikan slot ini
+        if (isClassExcludedAt(kelas, waktu)) return;
+
+        const allowed = allowedTimesByAbsent[absent];
+        if (allowed instanceof Set) {
+          if (!allowed.has(waktu)) return;
+        }
+
+        const key = makeSlotKey(hari, waktu, kelas, absent);
+
+        // Jika slot ini sudah wujud dari run terdahulu, kekalkan (termasuk edit manual)
+        if (existingMap[key]) {
+          newReliefRows.push(existingMap[key]);
+          return;
+        }
+
+        // SLOT BARU – cari guru ganti
+        let candidateRecords = [];
+
+        teacherList.forEach(t => {
+          if (absentTeachers.includes(t)) return;
+          if (excludedTeachers.has(t)) return; // guru yang ditick dalam "Guru dikecualikan" langsung tak boleh relief
+
+          // Semak clash dengan jadual asal – guru mengajar pada waktu sama?
+          const clashRecords = timetable.filter(r2 =>
+            r2.hari === hari && r2.waktu === waktu && r2.guru === t
+          );
+
+          let fromExcludedClass = false;
+
+          if (clashRecords.length) {
+            const allExcluded = clashRecords.every(r2 => isClassExcludedAt(r2.kelas, r2.waktu));
+            if (!allExcluded) return; // mengajar kelas biasa → tak boleh guna
+            fromExcludedClass = true; // mengajar di kelas dikecualikan → boleh
+          }
+
+          // Elak guru menerima 2 RELIEF pada masa yang sama (clash relief)
+          const reliefClash = existingReliefRows.concat(newReliefRows).some(r =>
+            r.waktu === waktu && r.reliefCode === t
+          );
+          if (reliefClash) return;
+
+          const teachLoad = baseDayLoad[t] || 0;
+          const reliefCount = reliefHistoryCount[t] || 0;
+
+          // HAD GLOBAL: maksimum 2 relief auto untuk setiap guru
+          const maxAllowed = 2;
+          if (reliefCount >= maxAllowed) return;
+
+          candidateRecords.push({
+            code: t,
+            fromExcludedClass,
+            teachLoad,
+            reliefCount,
+            clashRecords
+          });
+        });
+
+        let candidate = null;
+        let chosenClashRecords = [];
+        let chosenFromExcluded = false;
+
+        if (candidateRecords.length > 0) {
+          // Keutamaan 1: guru yang masih 0 relief
+          const group0 = candidateRecords.filter(c => c.reliefCount === 0);
+          const pool = group0.length ? group0 : candidateRecords;
+
+          // Susun ikut:
+          // 1. reliefCount (menaik)
+          // 2. Jika reliefCount = 0 → prefer fromExcludedClass = false (relief pertama waktu kosong)
+          //    Jika reliefCount > 0 → prefer fromExcludedClass = true (relief kedua di kelas dikecualikan)
+          // 3. beban mengajar asal (menaik)
+          // 4. kod guru (abjad)
+          pool.sort((a, b) => {
+            if (a.reliefCount !== b.reliefCount) return a.reliefCount - b.reliefCount;
+
+            if (a.reliefCount === 0 && b.reliefCount === 0) {
+              // relief pertama – suka waktu kosong dulu
+              if (a.fromExcludedClass !== b.fromExcludedClass) {
+                // false (waktu kosong) didahulukan berbanding true
+                return (a.fromExcludedClass ? 1 : 0) - (b.fromExcludedClass ? 1 : 0);
+              }
+            } else {
+              // relief kedua – suka slot dari kelas dikecualikan
+              if (a.fromExcludedClass !== b.fromExcludedClass) {
+                // true (kelas dikecualikan) didahulukan
+                return (b.fromExcludedClass ? 1 : 0) - (a.fromExcludedClass ? 1 : 0);
+              }
+            }
+
+            if (a.teachLoad !== b.teachLoad) return a.teachLoad - b.teachLoad;
+            return a.code.localeCompare(b.code);
+          });
+
+          const chosen = pool[0];
+          candidate = chosen.code;
+          chosenClashRecords = chosen.clashRecords;
+          chosenFromExcluded = chosen.fromExcludedClass;
+        }
+
+        let reliefTeacherName = candidate ? (teacherNames[candidate] || "") : "";
+        let reliefDisplay;
+
+        if (!candidate) {
+          reliefDisplay = '<span class="no-relief">Guru ganti tidak diperolehi</span>';
+        } else {
+          // cari kelas asal guru ini pada waktu tersebut yang dikecualikan
+          const asalClasses = Array.from(new Set(
+            chosenClashRecords
+              .filter(r2 => isClassExcludedAt(r2.kelas, r2.waktu))
+              .map(r2 => r2.kelas)
+          ));
+          const infoKelasAsal = asalClasses.length ? ` (${asalClasses.join('/')})` : "";
+
+          reliefDisplay = reliefTeacherName
+            ? `${candidate} - ${reliefTeacherName}${infoKelasAsal}`
+            : `${candidate}${infoKelasAsal}`;
+
+          // rekod sejarah relief
+          reliefHistoryCount[candidate] = (reliefHistoryCount[candidate] || 0) + 1;
+        }
+
+        newReliefRows.push({
+          key,
+          absentCode: absent,
+          absentName: teacherNames[absent] || "",
+          kelas,
+          waktu,
+          subjek,
+          reliefCode: candidate,
+          reliefName: reliefTeacherName,
+          reliefDisplay
+        });
+      });
+
+    // Kemaskini global: run seterusnya akan guna data ini
+    existingReliefRows = newReliefRows;
+
+    // HEADER OUTPUT (ada nama sekolah)
+    const headerDiv = document.getElementById('outputHeader');
+    headerDiv.innerHTML =
+      `<div>
+         <b>SMK TENGKU MENTERI</b><br>
+         <b>Jadual ganti</b> &nbsp; Tarikh: ${tarikh} &nbsp; Hari: ${hari} &nbsp; Minggu: ${minggu}
+       </div>`;
+
+    const tableDiv = document.getElementById('outputTable');
+
+    if (existingReliefRows.length === 0) {
+      tableDiv.innerHTML = "<p>Tiada slot ganti dijana untuk tetapan semasa.</p>";
+    } else {
+      let html = `<table>
+        <thead>
+          <tr>
+            <th>Guru tidak hadir</th>
+            <th>Mula - Tamat</th>
+            <th>Kelas</th>
+            <th>Subjek</th>
+            <th>Guru ganti</th>
+          </tr>
+        </thead>
+        <tbody>`;
+
+      existingReliefRows.forEach((row) => {
+        const absentDisplay = row.absentName
+          ? `${row.absentCode} - ${row.absentName}`
+          : row.absentCode;
+
+        const subjColor = getSubjectColor(row.subjek);
+        const classColor = getClassColor(row.kelas);
+
+        const autoText = row.reliefDisplay || "";
+
+        // Jika guru ini ada 2 relief atau lebih → highlight sel Guru Ganti
+        const reliefCountForThis = row.reliefCode ? (reliefHistoryCount[row.reliefCode] || 0) : 0;
+        const highlightStyle = reliefCountForThis > 1
+          ? 'background:#fee2e2;font-weight:bold;'
+          : '';
+
+        html += `<tr>
+          <td>${absentDisplay}</td>
+          <td>${row.waktu}</td>
+          <td><span class="chip-kelas">${row.kelas}</span></td>
+          <td style="background:${subjColor};">${row.subjek}</td>
+          <td>
+            <div class="relief-editable" contenteditable="true" data-key="${row.key}" style="${highlightStyle}">
+              ${autoText}
+            </div>
+          </td>
+        </tr>`;
+      });
+
+      html += `</tbody></table>`;
+      tableDiv.innerHTML = html;
+    }
+
+    document.getElementById('outputCard').style.display = 'block';
+
+    // KEMAS KINI DASHBOARD
+    updateDashboard(existingReliefRows, absentTeachers, reliefHistoryCount, hari);
+    // auto scroll ke paparan jadual
+    document.getElementById('outputCard').scrollIntoView({behavior:'smooth', block:'start'});
+  }
+
+  function updateDashboard(reliefRows, absentTeachers, reliefCountByTeacher, hari) {
+    const totalSlot = reliefRows.length;
+    const noReliefCount = reliefRows.filter(r => !r.reliefCode).length;
+    const reliefTeacherUsed = new Set(
+      reliefRows.filter(r => r.reliefCode).map(r => r.reliefCode)
+    ).size;
+
+    document.getElementById('statTotalSlot').textContent = totalSlot;
+    document.getElementById('statAbsentTeacher').textContent = absentTeachers.length;
+    document.getElementById('statReliefTeacher').textContent = reliefTeacherUsed;
+    document.getElementById('statNoRelief').textContent = noReliefCount;
+
+    document.getElementById('subTotalSlot').textContent =
+      totalSlot ? `Untuk hari ${hari}` : 'Belum dijana';
+    document.getElementById('subAbsentTeacher').textContent =
+      absentTeachers.length ? 'Guru ditanda tidak hadir' : 'Tiada guru tidak hadir ditanda';
+    document.getElementById('subReliefTeacher').textContent =
+      reliefTeacherUsed ? 'Guru yang menerima relief' : 'Belum ada relief';
+    document.getElementById('subNoRelief').textContent =
+      noReliefCount ? 'Perlu tindakan manual' : 'Semua slot ada guru ganti';
+
+    const container = document.getElementById('reliefTeacherSummary');
+    if (totalSlot === 0) {
+      container.innerHTML = `
+        <h3>Senarai Ringkas Beban Relief Guru</h3>
+        <small>Tiada data lagi. Jana jadual ganti untuk melihat ringkasan.</small>
+      `;
+      return;
+    }
+
+    let rows = Object.entries(reliefCountByTeacher)
+      .filter(([code, count]) => count > 0)
+      .sort((a,b) => b[1]-a[1]);
+
+    let html = `<h3>Senarai Ringkas Beban Relief Guru</h3>
+                <small>Hanya guru yang menerima relief (auto) untuk hari ini dipaparkan.</small>
+                <table>
+                  <thead>
+                    <tr>
+                      <th>Guru</th>
+                      <th>Bil. Relief</th>
+                    </tr>
+                  </thead>
+                  <tbody>`;
+    if (rows.length === 0) {
+      html += `<tr><td colspan="2">Tiada guru menerima relief (semua slot gagal diperolehi / diisi manual).</td></tr>`;
+    } else {
+      rows.forEach(([code, count]) => {
+        const name = teacherNames[code] || "";
+        const disp = name ? `${code} - ${name}` : code;
+        const isHigh = count > 1;
+        html += `<tr>
+                  <td>${disp}</td>
+                  <td${isHigh ? ' style="background:#fee2e2;font-weight:bold;color:#b91c1c;"' : ''}>${count}</td>
+                 </tr>`;
+      });
+    }
+    html += `</tbody></table>`;
+
+    container.innerHTML = html;
+  }
+
+  // =============== FUNGSI EXPORT PNG / JPG / PDF (JADUAL PENUH) ===============
+  async function exportAsImage(type) {
+    const card = document.getElementById('outputCard');
+    if (!card || card.style.display === 'none') {
+      alert("Sila jana jadual ganti dahulu.");
+      return;
+    }
+    const canvas = await html2canvas(card, {scale: 2});
+    const dataURL = canvas.toDataURL(type === 'jpg' ? 'image/jpeg' : 'image/png', 0.95);
+    const link = document.createElement('a');
+    const ts = new Date().toISOString().replace(/[:.]/g,'-');
+    link.download = `jadual_relief_${ts}.${type === 'jpg' ? 'jpg' : 'png'}`;
+    link.href = dataURL;
+    link.click();
+  }
+
+  function exportPNG() {
+    exportAsImage('png');
+  }
+
+  function exportJPG() {
+    exportAsImage('jpg');
+  }
+
+  // PDF Portrait (PT) – jadual penuh
+  function exportPDF() {
+    const card = document.getElementById('outputCard');
+    if (!card || card.style.display === 'none') {
+      alert("Sila jana jadual ganti dahulu.");
+      return;
+    }
+    if (!jsPDF) {
+      alert("Fungsi PDF tidak tersedia. Plugin jsPDF gagal dimuat dari CDN.");
+      return;
+    }
+    html2canvas(card, {scale: 2}).then(canvas => {
+      const imgData = canvas.toDataURL('image/png');
+      const pdf = new jsPDF('p', 'mm', 'a4');
+      const pageWidth = pdf.internal.pageSize.getWidth();
+      const pageHeight = pdf.internal.pageSize.getHeight();
+
+      const imgWidth = pageWidth - 20; // margin kiri/kanan 10mm
+      const imgHeight = canvas.height * imgWidth / canvas.width;
+
+      const posX = 10;
+      const posY = 10;
+
+      let finalHeight = imgHeight;
+      let finalWidth = imgWidth;
+      if (imgHeight > pageHeight - 20) {
+        const ratio = (pageHeight - 20) / imgHeight;
+        finalHeight = imgHeight * ratio;
+        finalWidth = imgWidth * ratio;
+      }
+
+      const ts = new Date().toISOString().replace(/[:.]/g,'-');
+      pdf.addImage(imgData, 'PNG', posX, posY, finalWidth, finalHeight);
+      pdf.save(`jadual_relief_${ts}_PT.pdf`);
+    });
+  }
+
+  // PDF Landscape (LS) – SEKARANG FONT BESAR (16px), boleh multi-page
+  function exportPDF_LS() {
+    const card = document.getElementById('outputCard');
+    if (!card || card.style.display === 'none') {
+      alert("Sila jana jadual ganti dahulu.");
+      return;
+    }
+    if (!jsPDF) {
+      alert("Fungsi PDF tidak tersedia. Plugin jsPDF gagal dimuat dari CDN.");
+      return;
+    }
+
+    // Besarkan font untuk eksport
+    card.classList.add('pdf-small');
+
+    html2canvas(card, {scale: 2}).then(canvas => {
+      // Buang semula kelas supaya paparan biasa tidak berubah
+      card.classList.remove('pdf-small');
+
+      const imgData = canvas.toDataURL('image/png');
+      const pdf = new jsPDF('l', 'mm', 'a4'); // landscape
+      const pageWidth = pdf.internal.pageSize.getWidth();
+      const pageHeight = pdf.internal.pageSize.getHeight();
+
+      const marginX = 10;
+      const marginY = 10;
+      const usableWidth = pageWidth - 2 * marginX;
+      const usableHeight = pageHeight - 2 * marginY;
+
+      const imgWidth = usableWidth;
+      const imgHeight = canvas.height * imgWidth / canvas.width;
+
+      let heightLeft = imgHeight;
+      let position = marginY;
+
+      // Halaman pertama
+      pdf.addImage(imgData, 'PNG', marginX, position, imgWidth, imgHeight);
+      heightLeft -= usableHeight;
+
+      // Halaman seterusnya (jika jadual panjang)
+      while (heightLeft > 0) {
+        pdf.addPage();
+        position = heightLeft * -1 + marginY;
+        pdf.addImage(imgData, 'PNG', marginX, position, imgWidth, imgHeight);
+        heightLeft -= usableHeight;
+      }
+
+      const ts = new Date().toISOString().replace(/[:.]/g,'-');
+      pdf.save(`jadual_relief_${ts}_LS.pdf`);
+    }).catch(() => {
+      card.classList.remove('pdf-small');
+    });
+  }
+
+  // =============== EXPORT UNTUK "SENARAI RINGKAS BEBAN RELIEF GURU" ===============
+  async function exportSummaryPNG() {
+    const container = document.getElementById('reliefTeacherSummary');
+    if (!container) {
+      alert("Ringkasan relief tidak dijumpai.");
+      return;
+    }
+    // Semak ada jadual atau tidak
+    if (!container.querySelector('table')) {
+      alert("Belum ada data ringkasan relief untuk dieksport. Sila jana jadual ganti dahulu.");
+      return;
+    }
+    const canvas = await html2canvas(container, {scale: 2});
+    const dataURL = canvas.toDataURL('image/png', 0.95);
+    const link = document.createElement('a');
+    const ts = new Date().toISOString().replace(/[:.]/g,'-');
+    link.download = `ringkasan_relief_${ts}.png`;
+    link.href = dataURL;
+    link.click();
+  }
+
+  function exportSummaryPDF() {
+    const container = document.getElementById('reliefTeacherSummary');
+    if (!container) {
+      alert("Ringkasan relief tidak dijumpai.");
+      return;
+    }
+    if (!container.querySelector('table')) {
+      alert("Belum ada data ringkasan relief untuk dieksport. Sila jana jadual ganti dahulu.");
+      return;
+    }
+    if (!jsPDF) {
+      alert("Fungsi PDF tidak tersedia. Plugin jsPDF gagal dimuat dari CDN.");
+      return;
+    }
+
+    html2canvas(container, {scale: 2}).then(canvas => {
+      const imgData = canvas.toDataURL('image/png');
+      const pdf = new jsPDF('p', 'mm', 'a4');
+      const pageWidth = pdf.internal.pageSize.getWidth();
+      const pageHeight = pdf.internal.pageSize.getHeight();
+
+      const marginX = 10;
+      const marginY = 10;
+      const usableWidth = pageWidth - 2 * marginX;
+      const usableHeight = pageHeight - 2 * marginY;
+
+      const imgWidth = usableWidth;
+      const imgHeight = canvas.height * imgWidth / canvas.width;
+
+      let heightLeft = imgHeight;
+      let position = marginY;
+
+      pdf.addImage(imgData, 'PNG', marginX, position, imgWidth, imgHeight);
+      heightLeft -= usableHeight;
+
+      while (heightLeft > 0) {
+        pdf.addPage();
+        position = heightLeft * -1 + marginY;
+        pdf.addImage(imgData, 'PNG', marginX, position, imgWidth, imgHeight);
+        heightLeft -= usableHeight;
+      }
+
+      const ts = new Date().toISOString().replace(/[:.]/g,'-');
+      pdf.save(`ringkasan_relief_${ts}_PT.pdf`);
+    });
+  }
+</script>
+</body>
+</html>
