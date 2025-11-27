@@ -8,21 +8,37 @@
 
 <!-- LIBRARY UNTUK EXPORT PNG/JPG/PDF -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js">
-// AUTO LOAD JADUAL EMBED BILA PAGE DIBUKA
-window.addEventListener('load', () => {
+
+function loadEmbeddedSchedule() {
   if (typeof EMBEDDED_CSV !== 'undefined' && EMBEDDED_CSV && EMBEDDED_CSV.trim()) {
     processCSVText(EMBEDDED_CSV);
+    alert('Jadual embed telah dimuatkan ke dalam sistem.');
+  } else {
+    alert('Tiada data jadual embed ditemui dalam sistem.');
   }
-});
+}
+
+// Jika mahu auto-load ketika laman dibuka, buang komen pada blok di bawah:
+// window.addEventListener('load', () => {
+//   loadEmbeddedSchedule();
+// });
 
 </script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js">
-// AUTO LOAD JADUAL EMBED BILA PAGE DIBUKA
-window.addEventListener('load', () => {
+
+function loadEmbeddedSchedule() {
   if (typeof EMBEDDED_CSV !== 'undefined' && EMBEDDED_CSV && EMBEDDED_CSV.trim()) {
     processCSVText(EMBEDDED_CSV);
+    alert('Jadual embed telah dimuatkan ke dalam sistem.');
+  } else {
+    alert('Tiada data jadual embed ditemui dalam sistem.');
   }
-});
+}
+
+// Jika mahu auto-load ketika laman dibuka, buang komen pada blok di bawah:
+// window.addEventListener('load', () => {
+//   loadEmbeddedSchedule();
+// });
 
 </script>
 
@@ -401,6 +417,12 @@ window.addEventListener('load', () => {
           Pilihan B: tampal data CSV seperti sebelum ini.<br>
           Pilihan C: guna butang <b>Muat Naik Jadual (FD)</b> untuk pilih fail CSV dari folder.
         </small>
+        <div style="margin-top:8px; margin-bottom:4px;">
+          <button type="button" onclick="loadEmbeddedSchedule()" style="padding:6px 12px; border-radius:6px; border:1px solid #0f766e; background:#0d9488; color:white; font-size:0.9rem; cursor:pointer;">
+            Guna Jadual Embed (Auto)
+          </button>
+          <small style="margin-left:8px; color:#6b7280;">Klik untuk load jadual yang telah dibina dalam sistem (tanpa fail CSV).</small>
+        </div>
         <textarea id="csvInput" placeholder="(Pilihan B) Tampal CSV di sini jika tidak guna Jadual Asas"></textarea><br>
         <button class="primary" onclick="loadTimetable()">Muat Naik Jadual (CSV)</button>
         <button onclick="loadTimetableFromFile()">Muat Naik Jadual (FD)</button>
@@ -2977,12 +2999,20 @@ const EMBEDDED_CSV = `Kelas,Hari,Masa,Subjek
     });
   }
 
-// AUTO LOAD JADUAL EMBED BILA PAGE DIBUKA
-window.addEventListener('load', () => {
+
+function loadEmbeddedSchedule() {
   if (typeof EMBEDDED_CSV !== 'undefined' && EMBEDDED_CSV && EMBEDDED_CSV.trim()) {
     processCSVText(EMBEDDED_CSV);
+    alert('Jadual embed telah dimuatkan ke dalam sistem.');
+  } else {
+    alert('Tiada data jadual embed ditemui dalam sistem.');
   }
-});
+}
+
+// Jika mahu auto-load ketika laman dibuka, buang komen pada blok di bawah:
+// window.addEventListener('load', () => {
+//   loadEmbeddedSchedule();
+// });
 
 </script>
 </body>
